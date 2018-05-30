@@ -27,6 +27,7 @@ exclude: ["_screenshots", "Gemfile", "Gemfile.lock", "LICENSE.txt", "README.md"]
 markdown: kramdown
 permalink: /:year/:month/:day/:title/
 include: ["_categories", "_images", "_files"]
+highlighter: rouge
 
 # Sass
 sass:

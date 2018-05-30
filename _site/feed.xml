@@ -5,9 +5,89 @@
     <description>Robert Kwapich Homepage</description>
     <link>/</link>
     <atom:link href="/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Wed, 30 May 2018 11:50:12 -0500</pubDate>
-    <lastBuildDate>Wed, 30 May 2018 11:50:12 -0500</lastBuildDate>
+    <pubDate>Wed, 30 May 2018 12:47:04 -0500</pubDate>
+    <lastBuildDate>Wed, 30 May 2018 12:47:04 -0500</lastBuildDate>
     <generator>Jekyll v3.1.6</generator>
+    
+      <item>
+        <title>Bacterial name generator with RNNs</title>
+        <description>&lt;p&gt;In this post I’ll cover how to build an RNN from scratch. In accompanying Jupyter notebook I’ll cover how to do this in 1) Python and Numpy (painstaking implementation) and how to do it quickly in 2) KERAS with Tensorflow backend. I’ll present how to construct an RNN unit, then an RNN network. I’ll compute all the derivatives needed for backpropagation &lt;em&gt;‘throught time’&lt;/em&gt;. Finally I’ll use the constructed networks and bacterial &lt;a href=&quot;https://www.arb-silva.de/&quot;&gt;SILVA database&lt;/a&gt; to extract bacterial genera names, and &lt;em&gt;sample&lt;/em&gt;, that is generate novel names through build model.&lt;/p&gt;
+
+&lt;font size=&quot;2&quot;&gt;Cover photo source: ... &lt;a target=&quot;_blank&quot; href=&quot;&quot;&gt;[ref].&lt;/a&gt;&lt;/font&gt;
+
+&lt;h1 id=&quot;motivation&quot;&gt;Motivation&lt;/h1&gt;
+
+&lt;p&gt;For some time I was working on the human gut microbiome, analyzing alterations of compositionality and functional capability in disease (publication in progress). At the same time I was playing with some neural network architectures, like RNNs discussed here, and its ability to create novel sentences or words based on already acquired &lt;em&gt;“knowledge”&lt;/em&gt;. In the era of Next Generation Sequencing (NGS), and especially Whole Metagenome Shotgun (WMS) sequencing it is now possible to study &lt;em&gt;‘microbial dark matter’&lt;/em&gt;, i.e. microbes that were previously uncharacterized, unknown mainly due to the hardships of cultivation or the specific geographic location, like some distant and exotic places (deep seas). I agree with &lt;a href=&quot;http://merenlab.org/2017/06/22/microbial-dark-matter/&quot;&gt;Dr. Murat Eren &lt;/a&gt; that &lt;em&gt;‘microbial dark matter’&lt;/em&gt; is a term wrong on so many levels, and shouldn’t be used… So, I won’t be using it again. I needed this term just to catch your attention.&lt;/p&gt;
+
+&lt;p&gt;Some microbes &lt;a href=&quot;https://en.wikipedia.org/wiki/List_of_bacterial_genera_named_after_personal_names&quot;&gt;have been named after its discoverer&lt;/a&gt;, some &lt;a href=&quot;https://en.wikipedia.org/wiki/List_of_bacterial_genera_named_after_geographical_names&quot;&gt;after geographical names&lt;/a&gt;, and finally some &lt;a href=&quot;https://en.wikipedia.org/wiki/List_of_bacterial_genera_named_after_institutions&quot;&gt;after institutions&lt;/a&gt;. Novel bacterial phyla, genera, species of strains are discovered now desipte limitations in its culturability. This is mainly achieved by computational methods: contig creation, genomic binning and further refinements based on single-copy core genes, redundancy measures etc… I though to myself, why not then come up with some bacterial name created by a neural network, that would create some novel names based on thousands of available genera name?&lt;/p&gt;
+
+&lt;p&gt;Here, I did just that. Since I quite enjoy playing with neural networks, I dediced to come up with this &lt;em&gt;fun project&lt;/em&gt;. Also, I decided also to carry out painstaking computations of backpropagation algorithm through RNNs. It is often neglected, as all major existing frameworks do this automatically for you. It must have been Richard Feynman that said: &lt;em&gt;“You don’t understand something completly if you have not built it yourself”&lt;/em&gt;. If it was not him, who cares, it is still a good advice, and I am going to apply it here.&lt;/p&gt;
+
+&lt;p&gt;I’ll cover &lt;strong&gt;some&lt;/strong&gt; RNN theory, carry out calculations of derivatives, propose RNN architecture, discuss how to train a model, and finally go over how to &lt;em&gt;sample&lt;/em&gt; novel observations from the trained model. Some parts of my discussion may contain brief python code listings, however for a complete interactive examples please refer to &lt;a href=&quot;FILL HERE&quot;&gt;jupyter notebook&lt;/a&gt;. I encourage YOU first to read this post, then follow along jupyter notebook, so you would have had built intuition by the time you read code.&lt;/p&gt;
+
+&lt;h1 id=&quot;rnns&quot;&gt;RNNs&lt;/h1&gt;
+
+&lt;h2 id=&quot;overview&quot;&gt;Overview&lt;/h2&gt;
+&lt;p&gt;In this post I am going to assume you are somewhat familiar with neural networks (NNs), since RNNs are variations on standard architectures. First let me show you a nice RNN block diagram:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/_images/bacterial_names/RNNcell.png&quot; alt=&quot;a Basic RNN cell&quot; /&gt;&lt;/p&gt;
+&lt;font size=&quot;2&quot;&gt;Imageo source: Andrew Ng&#39;s &quot;Sequence Models&quot; &lt;a target=&quot;_blank&quot; href=&quot;https://www.coursera.org/learn/nlp-sequence-models/&quot;&gt;[ref].&lt;/a&gt;&lt;/font&gt;
+
+&lt;p&gt;RNN can work on either characters or words. In this project I am going to generate words, so RNN model will inevitabely work on characters. Let me briefly describe what each notation element stands for:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;\( x^{&lt;t&gt;} \\) is an `t-th` element of sequence \\( X \\). Input sequence \\( X = \{ x^{&amp;lt;1&amp;gt;},x^{&amp;lt;2&amp;gt;},...,x^{&lt;t-1&gt;},x^{&lt;t&gt;}  \} \\),&lt;/t&gt;&lt;/t-1&gt;&lt;/t&gt;&lt;/li&gt;
+  &lt;li&gt;\( W_{aa} \), \( W_{ax} \), \( W_{ya} \): the weights of our RNN cell,&lt;/li&gt;
+  &lt;li&gt;\( a^{&lt;t-1&gt;} \\), \\( a^{&lt;t&gt;} \\): are *hidden state* activation from previous RNN cell (`t-1`) and for the next RNN cell (`t`),&lt;/t&gt;&lt;/t-1&gt;&lt;/li&gt;
+  &lt;li&gt;\( \hat{y}^{&lt;t&gt;} \\): is a prediction, a probability of a given character at a time-step `t`, usually computed by a `softmax` function as we operate on one-hot encodings,&lt;/t&gt;&lt;/li&gt;
+  &lt;li&gt;\( b_a \): is a bias term&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;The rest is a set of additions and multiplications. Essentialy the whole architecture is build upon this cell by means of repetition:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/_images/bacterial_names/RNNarch.png&quot; alt=&quot;a basic RNN architecture&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Forward pass through this network needs to compute \( \hat{Y} \) (prediction) vectors, hidden states \( a \), and store some of its computing results in &lt;em&gt;cache&lt;/em&gt; that is needed for backpropagation. After forward pass, for our model we’ll use a simple cross-entropy function as a loss. For a single timestep it is defined as:&lt;/p&gt;
+
+&lt;p&gt;\[  L_t(y_t,\hat{y}_t) = - y_tlog(\hat{y}_t) \]&lt;/p&gt;
+
+&lt;p&gt;and for an entire sequence cost is just a sum of these values:&lt;/p&gt;
+
+&lt;p&gt;\[ L(y,\hat{y}) = - \Sigma_t y_tlog(\hat{y}_t) \]&lt;/p&gt;
+
+&lt;h2 id=&quot;one-hot-encodings&quot;&gt;One-hot encodings&lt;/h2&gt;
+
+&lt;p&gt;Input sequence at a given timestep &lt;code class=&quot;highlighter-rouge&quot;&gt;t&lt;/code&gt;: \( x^{&lt;t&gt;} \\) must come in a handy format for computations.&lt;/t&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;padding&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;parameters-initialization&quot;&gt;Parameters initialization&lt;/h2&gt;
+
+&lt;h2 id=&quot;backpropagation&quot;&gt;Backpropagation&lt;/h2&gt;
+
+&lt;p&gt;Backpropagation in an RNN network is complicated, but not that hard. Essentialy it is often said that deriving these computations by hand is the most &lt;em&gt;‘complex’&lt;/em&gt; thing in neural networks. Since many frameworks outsource this for their users, it has become neglected - and I don’t blame anybody, it really is convenient. For a matter of practice however, in this section I am going to carry out all necessary calculations for the backpropagation through our RNN architecture.&lt;/p&gt;
+
+&lt;p&gt;Since these calculations take much space, and would hide the &lt;em&gt;“big picture”&lt;/em&gt;, please follow &lt;a href=&quot;/helper_posts/RNN_backprop.markdown&quot;&gt;this link&lt;/a&gt; for a complete set of computations. Below I reproduce the final derivative terms for convenience:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;test&lt;/li&gt;
+  &lt;li&gt;test&lt;/li&gt;
+  &lt;li&gt;test&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h1 id=&quot;resources&quot;&gt;Resources&lt;/h1&gt;
+
+</description>
+        <pubDate>Mon, 21 May 2018 00:00:00 -0500</pubDate>
+        <link>/2018/05/21/RNN-bacteria-name-generator/</link>
+        <guid isPermaLink="true">/2018/05/21/RNN-bacteria-name-generator/</guid>
+        
+        
+        <category>Data-Science</category>
+        
+      </item>
     
       <item>
         <title>Simple anomaly detection system</title>
