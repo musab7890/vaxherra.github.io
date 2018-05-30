@@ -1,28 +1,32 @@
 # Site settings
-email: 
+email:  robert.kwapich@gmail.com
 baseurl: ""
 paginate: 5
 paginate_path: "/blog/page-:num"
-google_analytics: 
+google_analytics:
+
 
 # SEO settings
-title: Trophy
-description: 
+title: Robert Kwapich Homepage
+description: Robert Kwapich Homepage
 url: ""
-twitter_username: 
-default_img: 
+twitter_username: vaxherra
+default_img:
 
 # Profile settings
-name: 
-profile_img: 
-profile: 
+name: Robert Kwapich
+profile_img: /_images/chill.jpg
+profile: <p align="justify"> I am Robert Kwapich. I have a Master of Science in medical physics, I know some ICT, currently working as bioinformatics data analyst and research assistant. I enjoy playing with machine learning and deep learning methods for data science in biology and medicine. Read more about me on <b><a href="/">the main page</a></b>.</p>
 social:
-  github: 
+  github:  https://github.com/vaxherra
+  twitter: https://twitter.com/vaxherra
+  linkedin: https://www.linkedin.com/in/robert-kwapich-4a5396a0
 
 # Build settings
 exclude: ["_screenshots", "Gemfile", "Gemfile.lock", "LICENSE.txt", "README.md"]
 markdown: kramdown
 permalink: /:year/:month/:day/:title/
+include: ["_categories", "_images", "_files"]
 
 # Sass
 sass:

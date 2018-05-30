@@ -1,0 +1,19 @@
+---
+layout: post
+title: "Homepage Launches"
+date: 2018-05-12
+categories:
+  - Blog
+description: Homepage Launch!
+image: /_images/blog.jpg
+image-sm: /_images/blog.jpg
+---
+Welcome to my homepage!
+
+I am Robert Kwapich. I studied medical physics and obtained a Master's degree from the University of Silesia in Katowice, Poland. I am currently working in the domain of bioinformatics and data-science as a Research Assistant in the US of A. I enjoy playing with machine learning and deep learning methods for data science in biology and medicine. Read more about me on the [main page](/)
+
+The intent of this website is double-fold. I want to present some of my ideas, thoughts and inspirations to the world in the form of blog posts. They can range from cinema, paintings, music, philosophy to physics, biology, computer science and some branches of artificial intelligence. The second pillar of my website is to present my actual work and implemented ideas in code. They can serve as my portfolio, or as a reference for somebody interested. Each post has a comment box hosted on **disqus**. 
+
+I plan to publish every 6-8 weeks in several categories: blog, data-science and bioinformatics. Right now you can navigate to my first post about [simple anomaly detection](_posts/2018-05-11-anomaly-detection) or to the [main page](/) and *'about me'* tab.
+
+Feel free to say hello in the comment!

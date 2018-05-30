@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Robert Kwapich Homepage</title>
+    <description>Robert Kwapich Homepage</description>
+    <link>/</link>
+    <atom:link href="/feed.xml" rel="self" type="application/rss+xml"/>
+    <pubDate>Wed, 30 May 2018 11:44:47 -0500</pubDate>
+    <lastBuildDate>Wed, 30 May 2018 11:44:47 -0500</lastBuildDate>
+    <generator>Jekyll v3.1.6</generator>
+    
+      <item>
+        <title>Simple anomaly detection system</title>
+        <description>&lt;p&gt;In this post I’ll quickly go over a simple &lt;em&gt;anomaly detection system&lt;/em&gt;: what is it, what are its motivations and how to build it. I’ll use an example dataset of hypothyroid patients to look for anomalies. You can read this post, &lt;a target=&quot;_blank&quot; href=&quot;https://github.com/vaxherra/vaxherra.github.io/blob/master/_files/anomaly_detection/anomaly.ipynb&quot;&gt;&lt;b&gt;&lt;u&gt;follow along a jupyter notebook &lt;/u&gt;&lt;/b&gt;&lt;/a&gt; for code snippets or &lt;a target=&quot;_blank&quot; href=&quot;/_files/anomaly_detection/anomaly.ipynb&quot;&gt;&lt;b&gt;&lt;u&gt;download&lt;/u&gt;&lt;/b&gt;&lt;/a&gt; it for a local use. I obtained the dataset from &lt;a href=&quot;http://odds.cs.stonybrook.edu/thyroid-disease-dataset/&quot;&gt;&lt;em&gt;Outlier Detection Dataset&lt;/em&gt; website&lt;/a&gt;, but you can download it &lt;a target=&quot;_blank&quot; href=&quot;/_files/anomaly_detection/thyroid.mat&quot;&gt;&lt;b&gt;&lt;u&gt;here&lt;/u&gt;&lt;/b&gt;&lt;/a&gt; if something happens to the source.&lt;/p&gt;
+
+&lt;font size=&quot;1&quot;&gt;Cover photo source: a cropped fragment from Pieter&#39;s Bruegel the Elder &lt;i&gt;&#39;Netherlandish Proverbs&#39;&lt;/i&gt;. This painting is a list of proverbs and idioms, and this particular fragments means &quot;To be able to tie even the devil to a pillow&quot;, i.e. Obstinacy overcomes everything &lt;a target=&quot;_blank&quot; href=&quot;https://en.wikipedia.org/wiki/Netherlandish_Proverbs&quot;&gt;[ref].&lt;/a&gt;&lt;/font&gt;
+
+&lt;h2 id=&quot;motivation&quot;&gt;Motivation&lt;/h2&gt;
+
+&lt;h3 id=&quot;overview&quot;&gt;Overview&lt;/h3&gt;
+
+&lt;p&gt;&lt;em&gt;Anomaly detection&lt;/em&gt; is really an &lt;em&gt;outlier&lt;/em&gt; detection problem. Given a certain set of observations we want to build some kind of understanding (model), so given a new example we can determine if it matches our previous observations or is not coming from the same distribution. An anomaly is different from standard classification problem due to the nature of our dataset. Often in anomaly detection we are given a dataset with &lt;em&gt;skewed classes&lt;/em&gt;, i.e. we have much more &lt;em&gt;negative&lt;/em&gt; (non-anomalous) that positive (anomalous) example. You can imagine a highly efficient production system, where most of our products are of good, acceptable quality, and are ready to be sold. Sometimes, however, we report a faulty product that cannot go into the market. Imagine that out of 100 thousand examples only 125 were &lt;em&gt;positive&lt;/em&gt; (anomalous). So only 0.125% of examples are &lt;em&gt;positive&lt;/em&gt;. Which is good for our production system, but makes it harder to use state of the art, ‘data-hungry’ machine learning algorithms based on neural nets (NN). NNs would probably not be able to properly learn what an &lt;em&gt;anomaly&lt;/em&gt; means. We often say, there is an infinite number of ways something might go wrong, but usually, there is a limited number of ways to do something properly.&lt;/p&gt;
+
+&lt;p&gt;Let’s say that we can automatically or semi-automatically collect some features from our products. Given the sheer number of features, it is often not possible to manually make sure our system or product it’s working properly. But wait. Didn’t I say that our example is going to include hypothyroid patients? Yes, indeed. For biological problems, this might be even harder, as biological systems usually are characterized by huge variability.&lt;/p&gt;
+
+&lt;h3 id=&quot;hypothyroid-dataset-overview&quot;&gt;Hypothyroid dataset overview&lt;/h3&gt;
+&lt;p&gt;I’ve already mentioned that our dataset is related to the hypothyroid disease. I’ve obtained this dataset from &lt;a href=&quot;http://odds.cs.stonybrook.edu/thyroid-disease-dataset/&quot;&gt;Outlier Detection Datasets&lt;/a&gt; website. It comprises of 3772 subjects, only 93 subjects are characterized as hypothyroid (i.e. positive, anomalous) ( \( 2.5\% \) ). Each subject is attributed with six real-value features that we must use to build a model and predict whether it is or might be hypothyroid patient or not. In addition data has \( \hat{Y} \in {0,1 } \) labels, that state the &lt;em&gt;‘ground truth’&lt;/em&gt;, so we know whether a certain subject was actually hypothyroid or not. In fact, if you read the data described in the provided link, you can see that dataset merges two classes (normal and subnormal functioning) into one “normal class”. Unfortunately, features are not named, so we actually don’t know what each of them represents. But for learning purposes, this is enough. Ok, let’s proceed to formulate a problem for our dataset.&lt;/p&gt;
+
+&lt;h3 id=&quot;problem-formulation&quot;&gt;Problem formulation&lt;/h3&gt;
+&lt;p&gt;Suppose we are working as a (clinical) data analyst for some medical organization close to a GP. One day we are given a moderate in size dataset of our patients. The staff has been collecting some six quantifiable features, be it symptoms or tests, that are indicative (to a limited extent) or suggest a hypothyroidism - “a condition in which the thyroid gland doesn’t produce enough thyroid hormone”. Our data also has a label stating whether a patient actually was hypothyroid.&lt;/p&gt;
+
+&lt;p&gt;We are not running a thyroid diagnosis and treatment center, but are a part of first contact team. For doctors, it would be nice to build some model that detects anomalies in patients, so further efforts might focus on specific organs or targeted diagnostics. Say, patient visits a GP, goes over symptoms and has a set of basic tests and measurements. Given our data, we can’t really tell whether this patient is or is not hypothyroid, but rather whether there is some significant abnormality in a set of his results that, given small historical data, we may want to send him or her to check specifically for thyroid.&lt;/p&gt;
+
+&lt;p&gt;Our dataset is relatively small and skewed as most patients do not have hypothyroidism. This limits us directly in using “state of the art”, everyone’s favorite neural net classification system. However, we can try working with this data and construct an anomaly detection system.&lt;/p&gt;
+
+&lt;h2 id=&quot;building-and-testing-a-model&quot;&gt;Building and testing a model&lt;/h2&gt;
+
+&lt;p&gt;The idea is simple. We model each feature of our dataset by a multivariate Gaussian distribution: compute mean matrix ( \( \mu \)  ) and covariance matrix ( \( \Sigma \) ) on a training set:&lt;/p&gt;
+
+&lt;p&gt;\[ \mu = \frac{1}{m} \Sigma^m_i x^{(i)} \]&lt;/p&gt;
+
+&lt;p&gt;\[ \Sigma = \frac{1}{m} \Sigma^m_i (x^{(i)}-\mu)\cdot(x^{(i)}-\mu)^T \]&lt;/p&gt;
+
+&lt;p&gt;Mean matrix \( \mu \) contains a mean value for each feature &lt;code class=&quot;highlighter-rouge&quot;&gt;n&lt;/code&gt;. Be sure to distinguish a summation sigma \( \Sigma_i^m \) from a covariance matrix sigma \( \Sigma \). This can be misleading, but just a bit. Then, given a new example \( x^{i}_1,…,x^{i}_n \) (with &lt;code class=&quot;highlighter-rouge&quot;&gt;n&lt;/code&gt; features) we can compute its probability as defined by Multivariate Gaussian Distribution:&lt;/p&gt;
+
+&lt;p&gt;\[ f_x(x^{i}) = \frac{  exp(- \frac{1}{2} (x^i-\mu)^T  \Sigma^{-1} (x^i-\mu)  ) }{  \sqrt{2\pi^n  | \Sigma |    }} \]&lt;/p&gt;
+
+&lt;p&gt;Having computed probability of a given, new example, we can then decide based on that single number whether it is coming from our distribution or not. However, we should also determine a probability threshold \( \epsilon \) below which we consider an example as &lt;em&gt;anomalous&lt;/em&gt;. But before we do that, we have to intelligently split our dataset.&lt;/p&gt;
+
+&lt;p&gt;We need to reasonably split the dataset for training, cross-validation and model testing. The idea is that for model training we use only negative examples, i.e. non-anomalous. Since we want to model each feature with a Gaussian distribution, it would be appropriate to &lt;code class=&quot;highlighter-rouge&quot;&gt;train&lt;/code&gt; our model on negative examples and use a smaller portion of positive examples for hyperparameter tuning (\( \epsilon \) ) and model testing.&lt;/p&gt;
+
+&lt;p&gt;Table below shows how one might approach it for our hypothyroid dataset:&lt;/p&gt;
+
+&lt;table&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th&gt;Sets&lt;/th&gt;
+      &lt;th&gt;# Negative examples&lt;/th&gt;
+      &lt;th&gt;# Positive examples&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td&gt;Train set&lt;/td&gt;
+      &lt;td&gt;2999&lt;/td&gt;
+      &lt;td&gt;0&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;Cross-validation set&lt;/td&gt;
+      &lt;td&gt;340&lt;/td&gt;
+      &lt;td&gt;46&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;Test set&lt;/td&gt;
+      &lt;td&gt;340&lt;/td&gt;
+      &lt;td&gt;47&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;p&gt;So train set is used to compute mean matrix \( \mu \) and covariance matrix \( \Sigma \). Cross-validation set is used to set an \( \epsilon \) probability threshold. How do we do this? We loop over an arbitrary number of possible probabilities, say one thousand or million points between the minimum and maximum probability obtained from a cross-validation set. Since our classes (anomalous vs non-anomalous) are skewed (there is disproportionately more negative examples that positives) we cannot use simple &lt;em&gt;accuracy&lt;/em&gt; based on frequency, i.e. how many times our classifier was correct. Imagine that we predict \( y=0 \) all the time. Since the majority of our subjects are non-anomalous this would actually classify wrongly  93 out of 3772 and that would give us 97.53% accuracy. But this is just wrong. We do want to catch some anomalies if they likely occur, even if we might be wrong about them, as it is essentially better to send a non-hypothyroid patient for additional screening than to neglect actual hypothyroidism in a patient. We’d be happier even if we traded some of the precision for a recall.&lt;/p&gt;
+
+&lt;p&gt;Thus, we must operate using &lt;a href=&quot;https://en.wikipedia.org/wiki/F1_score&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;F1&lt;/code&gt; score&lt;/a&gt; based on measure of precision and recall calculated using true positives (&lt;code class=&quot;highlighter-rouge&quot;&gt;tp&lt;/code&gt;), false positives (&lt;code class=&quot;highlighter-rouge&quot;&gt;fp&lt;/code&gt;) and false negatives (&lt;code class=&quot;highlighter-rouge&quot;&gt;fn&lt;/code&gt;):&lt;/p&gt;
+
+&lt;p&gt;\[ F_1 = \frac{2 \cdot precision \cdot recall}{precision + recall} \]&lt;/p&gt;
+
+&lt;p&gt;\[ precision =  \frac{tp}{tp+fp} \]&lt;/p&gt;
+
+&lt;p&gt;\[ recall = \frac{tp}{tp+fn}  \]&lt;/p&gt;
+
+&lt;p&gt;Just a reminder. True positive refer to anomalous examples. If, for a given \( \epsilon \) over which we are iterating the computed probability \( f_x^i &amp;lt; \epsilon \) and our ground truth label \( y=1 \) then we can count an example as true positive. False negative would occur for the same true label, but we’d observe \( f_x^i &amp;lt;&amp;gt; \epsilon \). And finally a false positive would produce a small probability, below-given threshold \( f_x^i &amp;lt; \epsilon \), but in reality, the truth label says it’s a non-anomalous example \( y=0 \).&lt;/p&gt;
+
+&lt;p&gt;Iterating over a set of \( epsilon \) values we choose the one that minimizes errors, i.e. maximizes our F1 score. We then use this \( \epsilon \) on the third portion of our data - &lt;em&gt;test set&lt;/em&gt; and compute final precision, recall, and F1 scores.&lt;/p&gt;
+
+&lt;p&gt;If you follow &lt;a target=&quot;_blank&quot; href=&quot;https://github.com/vaxherra/vaxherra.github.io/blob/master/_files/anomaly_detection/anomaly.ipynb&quot;&gt;&lt;b&gt;&lt;u&gt;jupyter notebook&lt;/u&gt;&lt;/b&gt;&lt;/a&gt; for this post, then you observed that our final F1 score is \( F1 \approx 0.73 \) with \( precision \approx 0.58 \) and  \( recall \approx 0.96 \). Is this good?&lt;/p&gt;
+
+&lt;h2 id=&quot;final-comment&quot;&gt;Final comment&lt;/h2&gt;
+
+&lt;p&gt;Our model has a high recall, which means we very well identify all anomalies. So we are “good” at catching anomalies in patients when they occur, however when you look at our precision score, it is low. Precision essentially measures how well (precisely) our model identifies anomalies. I.e. our low score indicates that model will produce an “alert” even if some patient might not be hypothyroid. Is this good? Given the skewed dataset, and serious lack of positive examples I’d say it is helpful. When a new patients comes in, we perform a given set of basic tests, and a model predicts that he or she might be hypothyroid, we just sent this patient for a detailed set of tests that are more precise (or sensitive). This is not a serious decision on performing a complicated operation relying on our system. But at the same time, we make sure that we are catching \( \approx 96\% \) of anomalies, as our recall score indicates. Imagine you have a huge turnouver of patients in a first-contact clinic. Spending less time on manually looking at results and wondering whether they might be indicative of malfunctioning thyroid saves time for a GP. Also, at certain situations thus might &lt;em&gt;at hoc&lt;/em&gt; suggest hypothyroid disease, and drive a GP to ask questions specific to symptoms (feeling increasingly tired, have dry skin, constipation and weight gain) or directly send a patient for a sensitive TSH test.&lt;/p&gt;
+
+&lt;p&gt;Oftentimes building a model and estimating accuracy is not enough. We need a model interpretation for a particular use. We have to analyze the nature of the problem and think about desired output. Here we have a standard precision and recall tradeoff, in which we are far better of with higher recall.&lt;/p&gt;
+</description>
+        <pubDate>Tue, 15 May 2018 00:00:00 -0500</pubDate>
+        <link>/2018/05/15/anomaly-detection/</link>
+        <guid isPermaLink="true">/2018/05/15/anomaly-detection/</guid>
+        
+        
+        <category>Data-Science</category>
+        
+      </item>
+    
+      <item>
+        <title>Homepage Launches</title>
+        <description>&lt;p&gt;Welcome to my homepage!&lt;/p&gt;
+
+&lt;p&gt;I am Robert Kwapich. I studied medical physics and obtained a Master’s degree from the University of Silesia in Katowice, Poland. I am currently working in the domain of bioinformatics and data-science as a Research Assistant in the US of A. I enjoy playing with machine learning and deep learning methods for data science in biology and medicine. Read more about me on the &lt;a href=&quot;/&quot;&gt;main page&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;The intent of this website is double-fold. I want to present some of my ideas, thoughts and inspirations to the world in the form of blog posts. They can range from cinema, paintings, music, philosophy to physics, biology, computer science and some branches of artificial intelligence. The second pillar of my website is to present my actual work and implemented ideas in code. They can serve as my portfolio, or as a reference for somebody interested. Each post has a comment box hosted on &lt;strong&gt;disqus&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;I plan to publish every 6-8 weeks in several categories: blog, data-science and bioinformatics. Right now you can navigate to my first post about &lt;a href=&quot;_posts/2018-05-11-anomaly-detection&quot;&gt;simple anomaly detection&lt;/a&gt; or to the &lt;a href=&quot;/&quot;&gt;main page&lt;/a&gt; and &lt;em&gt;‘about me’&lt;/em&gt; tab.&lt;/p&gt;
+
+&lt;p&gt;Feel free to say hello in the comment!&lt;/p&gt;
+</description>
+        <pubDate>Sat, 12 May 2018 00:00:00 -0500</pubDate>
+        <link>/2018/05/12/launch/</link>
+        <guid isPermaLink="true">/2018/05/12/launch/</guid>
+        
+        
+        <category>Blog</category>
+        
+      </item>
+    
+      <item>
+        <title>Craft Beer</title>
+        <description>&lt;p&gt;Etsy squid occupy pop-up. Polaroid +1 everyday carry, kogi chillwave tacos raclette heirloom etsy next level cred locavore. Blog street art DIY, pug crucifix asymmetrical chicharrones. Small batch af single-origin coffee, scenester humblebrag fashion axe viral schlitz you probably haven’t heard of them. Kickstarter synth poutine brunch hoodie. Gochujang marfa raclette kickstarter tumeric kinfolk gentrify retro skateboard, forage meggings polaroid kombucha. Tilde mlkshk fam meggings.&lt;/p&gt;
+
+&lt;p&gt;KURFA
+&lt;img src=&quot;/_imgaes/blog.jpg&quot; alt=&quot;test&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Actually YOLO marfa tofu shabby chic snackwave. Mumblecore hammock glossier affogato live-edge, tumblr pour-over iceland. Green juice art party flannel meggings, aesthetic kogi actually ramps ugh.&lt;/li&gt;
+  &lt;li&gt;Church-key crucifix messenger bag health goth&lt;/li&gt;
+  &lt;li&gt;Try-hard artisan direct trade&lt;/li&gt;
+  &lt;li&gt;Cold-pressed selfies&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Actually YOLO marfa tofu shabby chic snackwave. Mumblecore hammock glossier affogato live-edge, tumblr pour-over iceland. Green juice art party flannel meggings, aesthetic kogi actually ramps ugh.&lt;/li&gt;
+  &lt;li&gt;Church-key crucifix messenger bag health goth&lt;/li&gt;
+  &lt;li&gt;Try-hard artisan direct trade&lt;/li&gt;
+  &lt;li&gt;Cold-pressed selfies&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h3&gt;Subway tile&lt;/h3&gt;
+&lt;p&gt;Knausgaard readymade williamsburg tote bag taxidermy, DIY meditation copper mug. Farm-to-table &lt;a href=&quot;#&quot;&gt;street art&lt;/a&gt; fixie, chambray vice literally four loko vaporware. Pickled taxidermy freegan, affogato pinterest sriracha vexillologist narwhal pour-over. Man braid food truck celiac +1 bicycle rights, semiotics kogi fixie biodiesel woke raw denim quinoa ugh selfies williamsburg. Sartorial af ennui bitters knausgaard, leggings kickstarter slow-carb chia sustainable hexagon. Prism 3 wolf moon occupy ramps wayfarers tumblr narwhal 90’s. Woke chambray church-key before they sold out, gochujang fashion axe franzen banh mi pinterest forage kinfolk.&lt;/p&gt;
+
+&lt;figure&gt;
+  &lt;img src=&quot;https://picsum.photos/2000/1200?image=1003&quot; alt=&quot;Placeholder&quot; /&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;Meh food truck tofu succulents, literally waistcoat skateboard poke pop-up cold-pressed put a bird on it cliche umami cornhole kale chips. Man braid 8-bit irony selvage, butcher blog everyday carry. Af meggings tacos ugh la croix skateboard. Biodiesel paleo prism kombucha seitan drinking vinegar. Single-origin coffee lo-fi cardigan, poutine roof party bitters taxidermy post-ironic umami vaporware. Austin edison bulb leggings cliche. Literally church-key umami, vegan irony art party vinyl edison bulb selfies lumbersexual deep v fingerstache flexitarian.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  Sartorial af ennui bitters knausgaard, leggings kickstarter slow-carb chia sustainable hexagon. Prism 3 wolf moon occupy ramps wayfarers tumblr narwhal 90&#39;s.
+  &lt;cite&gt;Man braid&lt;/cite&gt;
+&lt;/blockquote&gt;
+
+&lt;h4&gt;Subway tile&lt;/h4&gt;
+&lt;p&gt;Slow-carb cornhole crucifix thundercats intelligentsia. Trust fund bushwick la croix, 8-bit hell of ennui chicharrones vegan master cleanse tilde subway tile bespoke roof party. Next level celiac bushwick coloring book subway tile. Lyft knausgaard four loko, twee sustainable narwhal letterpress PBR&amp;amp;B kombucha paleo mixtape helvetica. Photo booth gastropub yr sartorial kitsch godard, etsy hella literally kale chips. Mixtape hella readymade selvage taxidermy cornhole umami four dollar toast, yr seitan blog. Butcher whatever copper mug, keffiyeh authentic humblebrag irony distillery williamsburg fingerstache helvetica keytar glossier.&lt;/p&gt;
+
+&lt;figure&gt;
+  &lt;img src=&quot;https://picsum.photos/2000/1200?image=1003&quot; alt=&quot;Placeholder&quot; /&gt;
+  &lt;figcaption&gt;Gentrify cray pug authentic, cliche listicle actually subway tile woke semiotics af.&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;Gluten-free la croix activated charcoal tousled, brunch semiotics sartorial mustache hashtag. Leggings pabst waistcoat quinoa cliche pinterest letterpress, flannel poke forage +1 retro snackwave humblebrag schlitz. Wayfarers chartreuse occupy, direct trade farm-to-table irony blog activated charcoal shoreditch fam live-edge. Intelligentsia scenester gochujang gentrify portland offal. Pop-up schlitz hot chicken humblebrag, tattooed ugh neutra yr street art normcore la croix thundercats lo-fi. Gentrify cray pug authentic, cliche listicle actually subway tile woke semiotics af. Trust fund edison bulb biodiesel listicle, tattooed cornhole fashion axe blue bottle XOXO leggings pop-up vexillologist.&lt;/p&gt;
+
+&lt;p&gt;Pinterest cold-pressed selfies man bun twee williamsburg irony, art party snackwave tumeric knausgaard marfa polaroid chambray. PBR&amp;amp;B semiotics selvage brooklyn hexagon cray. Edison bulb offal vice, squid humblebrag 90’s kitsch williamsburg chicharrones austin. Poke 3 wolf moon selfies banh mi farm-to-table raclette. +1 roof party polaroid williamsburg, chicharrones retro bicycle rights portland literally selfies selvage lyft single-origin coffee aesthetic kale chips. Blog yr la croix four loko beard. Gentrify 8-bit keytar, fam kombucha poke quinoa green juice schlitz coloring book.&lt;/p&gt;
+</description>
+        <pubDate>Fri, 19 Feb 2016 00:00:00 -0600</pubDate>
+        <link>/2016/02/19/craft-beer/</link>
+        <guid isPermaLink="true">/2016/02/19/craft-beer/</guid>
+        
+        
+        <category>Juice</category>
+        
+      </item>
+    
+  </channel>
+</rss>
