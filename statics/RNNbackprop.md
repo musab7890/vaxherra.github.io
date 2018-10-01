@@ -224,4 +224,4 @@ The first derivative is a derivative over `tanh` (already computed), the second 
 
 Ufff... derivatives are easy, but take time, patients and energy. No wonder major frameworks have this implemented it *"under the hood"* so people can only create computation graphs.
 
-[<--- Go back to original post]({{ site.baseurl }}{% post_url 2018-05-21-RNN-bacteria-name-generator %})
+[<--- Go back to original post]({{ site.baseurl }}{% post_url 2018-10-01-RNN-bacteria-name-generator %})
