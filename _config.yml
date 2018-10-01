@@ -29,9 +29,13 @@ permalink: /:year/:month/:day/:title/
 include: ["_categories", "_images", "_files"]
 highlighter: rouge
 
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+
 # Sass
 sass:
   style: compressed
 
 # Gems
-gems: [jekyll-paginate, jekyll-sitemap, octopress-autoprefixer]
+gems: [jekyll-paginate, jekyll-sitemap,  octopress-autoprefixer, jekyll-pandoc]

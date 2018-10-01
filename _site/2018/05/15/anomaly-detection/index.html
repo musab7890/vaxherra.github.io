@@ -6,11 +6,16 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
+  <!-- Mathjax Support -->
+  <script type="text/javascript" async
+    src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML">
+  </script>
+
   <title>Simple anomaly detection system | Robert Kwapich Homepage</title>
   <meta name="author" content="Robert Kwapich">
   <meta name="description" content="Robert Kwapich Homepage">
   <meta property="og:title" content="Simple anomaly detection system | Robert Kwapich Homepage">
-  <meta property="og:url" content="/2018/05/15/anomaly-detection/">
+  <meta property="og:url" content="http://localhost:4000/2018/05/15/anomaly-detection/">
   <meta property="og:site_name" content="Robert Kwapich Homepage">
   <meta property="og:description" content="Create a basic anomaly detection system in Python">
   <meta property="og:image" content="/_images/anomaly.png">
@@ -19,10 +24,10 @@
   <meta name="twitter:card" content="summary">
   <meta name="twitter:description" content="Create a basic anomaly detection system in Python">
   <meta name="twitter:title" content="Simple anomaly detection system | Robert Kwapich Homepage">
-  <meta name="twitter:url" content="/2018/05/15/anomaly-detection/">
+  <meta name="twitter:url" content="http://localhost:4000/2018/05/15/anomaly-detection/">
   <meta name="twitter:site" content="Robert Kwapich Homepage">
   <meta name="twitter:creator" content="@vaxherra">
-  <meta name="twitter:domain" content="">
+  <meta name="twitter:domain" content="http://localhost:4000">
   <meta property="twitter:image" content="/_images/anomaly.png">
 
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inconsolata|Lora|Space+Mono:700">
@@ -31,8 +36,8 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/4.2.0/normalize.min.css">
   <link rel="stylesheet" href="/assets/css/main.css">
 
-  <link rel="alternate" type="application/rss+xml" title="Robert Kwapich Homepage" href="/feed.xml">
-  <link rel="canonical" href="/2018/05/15/anomaly-detection/">
+  <link rel="alternate" type="application/rss+xml" title="Robert Kwapich Homepage" href="http://localhost:4000/feed.xml">
+  <link rel="canonical" href="http://localhost:4000/2018/05/15/anomaly-detection/">
 
   
 </head>
@@ -41,7 +46,10 @@
   <body>
 
     <main>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+      <!-- Mathjax Support -->
+<script type="text/javascript" async
+  src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
 
 <article itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
 
@@ -52,10 +60,10 @@
     </a>
     <figure class="absolute-bg mast__img" style="background-image: url('/_images/anomaly.png');"></figure>
     <div class="mast__container">
-      <span><time datetime="2018-05-15T00:00:00-05:00" itemprop="datePublished">May 15, 2018</time></span>
+      <span><time datetime="2018-05-15T00:00:00-04:00" itemprop="datePublished">May 15, 2018</time></span>
       <h1 itemprop="name headline">Simple anomaly detection system</h1>
       
-        <span>Posted in 
+        <span>Posted in
           
             <a class="nav--white" href="/category/data-science">Data-Science</a>
           
@@ -67,9 +75,9 @@
 
   <section class="section-padding bg-grey" itemprop="articleBody">
     <div class="post">
-      <p>In this post I’ll quickly go over a simple <em>anomaly detection system</em>: what is it, what are its motivations and how to build it. I’ll use an example dataset of hypothyroid patients to look for anomalies. You can read this post, <a target="_blank" href="https://github.com/vaxherra/vaxherra.github.io/blob/master/_files/anomaly_detection/anomaly.ipynb"><b><u>follow along a jupyter notebook </u></b></a> for code snippets or <a target="_blank" href="/_files/anomaly_detection/anomaly.ipynb"><b><u>download</u></b></a> it for a local use. I obtained the dataset from <a href="http://odds.cs.stonybrook.edu/thyroid-disease-dataset/"><em>Outlier Detection Dataset</em> website</a>, but you can download it <a target="_blank" href="/_files/anomaly_detection/thyroid.mat"><b><u>here</u></b></a> if something happens to the source.</p>
+      <p>In this post I’ll quickly go over a simple <em>anomaly detection system</em>: what is it, what are its motivations and how to build it. I’ll use an example dataset of hypothyroid patients to look for anomalies. You can read this post, <a href="https://github.com/vaxherra/vaxherra.github.io/blob/master/_files/anomaly_detection/anomaly.ipynb"><b><u>follow along a jupyter notebook </u></b></a> for code snippets or <a href="/_files/anomaly_detection/anomaly.ipynb"><b><u>download</u></b></a> it for a local use. I obtained the dataset from <a href="http://odds.cs.stonybrook.edu/thyroid-disease-dataset/"><em>Outlier Detection Dataset</em> website</a>, but you can download it <a href="/_files/anomaly_detection/thyroid.mat"><b><u>here</u></b></a> if something happens to the source.</p>
 
-<font size="1">Cover photo source: a cropped fragment from Pieter's Bruegel the Elder <i>'Netherlandish Proverbs'</i>. This painting is a list of proverbs and idioms, and this particular fragments means "To be able to tie even the devil to a pillow", i.e. Obstinacy overcomes everything <a target="_blank" href="https://en.wikipedia.org/wiki/Netherlandish_Proverbs">[ref].</a></font>
+<font size="1">Cover photo source: a cropped fragment from Pieter's Bruegel the Elder <i>'Netherlandish Proverbs'</i>. This painting is a list of proverbs and idioms, and this particular fragments means "To be able to tie even the devil to a pillow", i.e. Obstinacy overcomes everything <a href="https://en.wikipedia.org/wiki/Netherlandish_Proverbs">[ref].</a></font>
 
 <h2 id="motivation">Motivation</h2>
 
@@ -148,7 +156,7 @@
 
 <p>Iterating over a set of \( epsilon \) values we choose the one that minimizes errors, i.e. maximizes our F1 score. We then use this \( \epsilon \) on the third portion of our data - <em>test set</em> and compute final precision, recall, and F1 scores.</p>
 
-<p>If you follow <a target="_blank" href="https://github.com/vaxherra/vaxherra.github.io/blob/master/_files/anomaly_detection/anomaly.ipynb"><b><u>jupyter notebook</u></b></a> for this post, then you observed that our final F1 score is \( F1 \approx 0.73 \) with \( precision \approx 0.58 \) and  \( recall \approx 0.96 \). Is this good?</p>
+<p>If you follow <a href="https://github.com/vaxherra/vaxherra.github.io/blob/master/_files/anomaly_detection/anomaly.ipynb"><b><u>jupyter notebook</u></b></a> for this post, then you observed that our final F1 score is \( F1 \approx 0.73 \) with \( precision \approx 0.58 \) and  \( recall \approx 0.96 \). Is this good?</p>
 
 <h2 id="final-comment">Final comment</h2>
 

@@ -3,86 +3,262 @@
   <channel>
     <title>Robert Kwapich Homepage</title>
     <description>Robert Kwapich Homepage</description>
-    <link>/</link>
-    <atom:link href="/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Wed, 30 May 2018 12:47:04 -0500</pubDate>
-    <lastBuildDate>Wed, 30 May 2018 12:47:04 -0500</lastBuildDate>
-    <generator>Jekyll v3.1.6</generator>
+    <link>http://localhost:4000/</link>
+    <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml"/>
+    <pubDate>Mon, 01 Oct 2018 17:20:26 -0400</pubDate>
+    <lastBuildDate>Mon, 01 Oct 2018 17:20:26 -0400</lastBuildDate>
+    <generator>Jekyll v3.7.4</generator>
     
       <item>
         <title>Bacterial name generator with RNNs</title>
-        <description>&lt;p&gt;In this post I’ll cover how to build an RNN from scratch. In accompanying Jupyter notebook I’ll cover how to do this in 1) Python and Numpy (painstaking implementation) and how to do it quickly in 2) KERAS with Tensorflow backend. I’ll present how to construct an RNN unit, then an RNN network. I’ll compute all the derivatives needed for backpropagation &lt;em&gt;‘throught time’&lt;/em&gt;. Finally I’ll use the constructed networks and bacterial &lt;a href=&quot;https://www.arb-silva.de/&quot;&gt;SILVA database&lt;/a&gt; to extract bacterial genera names, and &lt;em&gt;sample&lt;/em&gt;, that is generate novel names through build model.&lt;/p&gt;
+        <description>&lt;p&gt;In this post I’ll cover how to build a Recurrent Neural Network (RNN) from scratch, as well as using existing Deep Learning (DL) frameworks to create new bacterial names from thousands of publicly available annotations.&lt;/p&gt;
 
-&lt;font size=&quot;2&quot;&gt;Cover photo source: ... &lt;a target=&quot;_blank&quot; href=&quot;&quot;&gt;[ref].&lt;/a&gt;&lt;/font&gt;
+&lt;p&gt;In accompanying Jupyter notebooks I’ll cover how to do this in:&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;Python and Numpy (painstaking implementation) - &lt;a href=&quot;/_files/bacterial_names/RNNs.ipynb&quot;&gt;see here&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;KERAS with Tensorflow backend (quick implementation) - &lt;a href=&quot;/_files/bacterial_names/RNNs_KERAS.ipynb&quot;&gt;see here&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;I assume you have some knowledge of standard neural networks, are familiar with the ideas of propagation and backpropagation, loss and cost functions. I’ll present how to construct an RNN unit, then an RNN network. I’ll compute all the derivatives needed for backpropagation &lt;em&gt;‘throught time’&lt;/em&gt;. Finally I’ll use the constructed networks and bacterial &lt;a href=&quot;https://www.arb-silva.de/&quot;&gt;SILVA database&lt;/a&gt; to extract bacterial genera names, and &lt;strong&gt;sample&lt;/strong&gt; - generate novel names through our model.&lt;/p&gt;
 
 &lt;h1 id=&quot;motivation&quot;&gt;Motivation&lt;/h1&gt;
 
-&lt;p&gt;For some time I was working on the human gut microbiome, analyzing alterations of compositionality and functional capability in disease (publication in progress). At the same time I was playing with some neural network architectures, like RNNs discussed here, and its ability to create novel sentences or words based on already acquired &lt;em&gt;“knowledge”&lt;/em&gt;. In the era of Next Generation Sequencing (NGS), and especially Whole Metagenome Shotgun (WMS) sequencing it is now possible to study &lt;em&gt;‘microbial dark matter’&lt;/em&gt;, i.e. microbes that were previously uncharacterized, unknown mainly due to the hardships of cultivation or the specific geographic location, like some distant and exotic places (deep seas). I agree with &lt;a href=&quot;http://merenlab.org/2017/06/22/microbial-dark-matter/&quot;&gt;Dr. Murat Eren &lt;/a&gt; that &lt;em&gt;‘microbial dark matter’&lt;/em&gt; is a term wrong on so many levels, and shouldn’t be used… So, I won’t be using it again. I needed this term just to catch your attention.&lt;/p&gt;
+&lt;p&gt;For some time I was working on the human gut microbiome, analyzing alterations of compositionality and functional capability in disease (publication in progress). At the same time I was playing with some neural network architectures, like RNNs discussed here, and its ability to create novel sentences or words based on already acquired &lt;em&gt;“knowledge”&lt;/em&gt;. In the era of Next Generation Sequencing (NGS), and especially Whole Metagenome Shotgun (WMS) sequencing it is now possible to study &lt;em&gt;‘microbial dark matter’&lt;/em&gt;, i.e. microbes that were previously uncharacterized, unknown mainly due to the hardships of cultivation or the specific geographic location, like some distant and exotic places (deep seas). I agree with &lt;a href=&quot;http://merenlab.org/2017/06/22/microbial-dark-matter/&quot;&gt;Dr. Murat Eren &lt;/a&gt; that &lt;em&gt;‘microbial dark matter’&lt;/em&gt; is a term wrong on so many levels. As “&lt;em&gt;The dark matter in physics is a place holder for a not-yet-characterized form of matter that is distinct from ordinary matter&lt;/em&gt;”, whereas undiscovered microbes are just… uncharacterized. Hence, I won’t be using this term again.&lt;/p&gt;
 
 &lt;p&gt;Some microbes &lt;a href=&quot;https://en.wikipedia.org/wiki/List_of_bacterial_genera_named_after_personal_names&quot;&gt;have been named after its discoverer&lt;/a&gt;, some &lt;a href=&quot;https://en.wikipedia.org/wiki/List_of_bacterial_genera_named_after_geographical_names&quot;&gt;after geographical names&lt;/a&gt;, and finally some &lt;a href=&quot;https://en.wikipedia.org/wiki/List_of_bacterial_genera_named_after_institutions&quot;&gt;after institutions&lt;/a&gt;. Novel bacterial phyla, genera, species of strains are discovered now desipte limitations in its culturability. This is mainly achieved by computational methods: contig creation, genomic binning and further refinements based on single-copy core genes, redundancy measures etc… I though to myself, why not then come up with some bacterial name created by a neural network, that would create some novel names based on thousands of available genera name?&lt;/p&gt;
 
-&lt;p&gt;Here, I did just that. Since I quite enjoy playing with neural networks, I dediced to come up with this &lt;em&gt;fun project&lt;/em&gt;. Also, I decided also to carry out painstaking computations of backpropagation algorithm through RNNs. It is often neglected, as all major existing frameworks do this automatically for you. It must have been Richard Feynman that said: &lt;em&gt;“You don’t understand something completly if you have not built it yourself”&lt;/em&gt;. If it was not him, who cares, it is still a good advice, and I am going to apply it here.&lt;/p&gt;
+&lt;p&gt;Here, I did just that. Since I quite enjoy playing with neural networks, I decidced to come up with this fun mini project. I decided also to carry out painstaking computations of backpropagation algorithm through RNNs. It is often neglected, as all existing frameworks do this automatically for you. It must have been Richard Feynman that said: &lt;em&gt;“You don’t understand something completly if you have not built it yourself”&lt;/em&gt;. If it was not him who said it, who cares? it is still a good advice, and I am going to apply it here.&lt;/p&gt;
 
-&lt;p&gt;I’ll cover &lt;strong&gt;some&lt;/strong&gt; RNN theory, carry out calculations of derivatives, propose RNN architecture, discuss how to train a model, and finally go over how to &lt;em&gt;sample&lt;/em&gt; novel observations from the trained model. Some parts of my discussion may contain brief python code listings, however for a complete interactive examples please refer to &lt;a href=&quot;FILL HERE&quot;&gt;jupyter notebook&lt;/a&gt;. I encourage YOU first to read this post, then follow along jupyter notebook, so you would have had built intuition by the time you read code.&lt;/p&gt;
+&lt;p&gt;I’ll cover &lt;strong&gt;some&lt;/strong&gt; RNN theory, carry out calculations of derivatives, propose RNN architecture, discuss how to train a model, and finally go over how to &lt;em&gt;sample&lt;/em&gt; novel observations from the trained model. Some parts of my discussion may contain brief python code listings, however for a complete interactive examples please refer to the &lt;strong&gt;jupyter notebooks&lt;/strong&gt; (links above). I encourage you to first read this post, then follow along jupyter notebook of your choice. That way you would have had built intuition by the time you read code implementations which are not as abundant in explanations. And as I mentioned earlier, feel free to chose a simple implementation with KERAS or a more complicated implementation with python.&lt;/p&gt;
+
+&lt;h1 id=&quot;input-dataset&quot;&gt;Input dataset&lt;/h1&gt;
+
+&lt;p&gt;For this project I am going to use a &lt;a href=&quot;https://www.arb-silva.de/&quot;&gt;SILVA database&lt;/a&gt;  “&lt;em&gt;A comprehensive on-line resource for quality checked and aligned ribosomal RNA sequence data.&lt;/em&gt;”. In fact I’ll only be focusing on taxonomy annotations for bacterial genera. Currently the latest release is numbered 132 and the &lt;code class=&quot;highlighter-rouge&quot;&gt;gzipped&lt;/code&gt; file can be downloaded directly &lt;a href=&quot;https://www.arb-silva.de/fileadmin/silva_databases/release_132/Exports/SILVA_132_LSUParc_tax_silva.fasta.gz&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;The previously mentioned &lt;code class=&quot;highlighter-rouge&quot;&gt;jupyter&lt;/code&gt; notebooks provide code, a set of simple unix, &lt;code class=&quot;highlighter-rouge&quot;&gt;awk&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;sed&lt;/code&gt; tricks piped together, showing how to reformat this &lt;code class=&quot;highlighter-rouge&quot;&gt;.fasta&lt;/code&gt; file to come up with list of genera. The formatted file can be &lt;a href=&quot;/_files/bacterial_names/genera.txt&quot;&gt;downloaded here&lt;/a&gt;. It contains &lt;strong&gt;7901&lt;/strong&gt; genera names that are going to be used for our model training.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; head &lt;span class=&quot;nt&quot;&gt;-10&lt;/span&gt; genera.txt
+
+Abelmoschus
+Abies
+Abiotrophia
+Abolboda
+Abortiporus
+Abrahamia
+Abroma
+Abrus
+Absidia
+Abuta&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;For our purposes the input dataset is converted to lowercase, as it is better that our model doesn’t learn something that is not useful for our task at hand.&lt;/p&gt;
 
 &lt;h1 id=&quot;rnns&quot;&gt;RNNs&lt;/h1&gt;
 
-&lt;h2 id=&quot;overview&quot;&gt;Overview&lt;/h2&gt;
-&lt;p&gt;In this post I am going to assume you are somewhat familiar with neural networks (NNs), since RNNs are variations on standard architectures. First let me show you a nice RNN block diagram:&lt;/p&gt;
+&lt;h2 id=&quot;introduction&quot;&gt;Introduction&lt;/h2&gt;
+
+&lt;p&gt;For an extensive reading on the topic I direct you to the &lt;em&gt;resources&lt;/em&gt; section at the end of this post. If you are already familiar with Recurrent Neural Networks  (RNNs), skip this section, as it only reviews what is special with RNNs as opposed to &lt;em&gt;feedforward networks&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Standard neural models are often referred to as &lt;em&gt;feedforward networks&lt;/em&gt; as each input, i.e. a data point or an image is treated as separate entity. The model has no “&lt;em&gt;memory”&lt;/em&gt;, and is not a particularly good fit for processing sequence of data. An RNN is used to process sequences of information through iteration of each element of the data, like time-points, words or characters. It tries to &lt;em&gt;keep memory&lt;/em&gt; of what came before.&lt;/p&gt;
+
+&lt;p&gt;Architecture of an RNN maintains an additional parameter, so called &lt;em&gt;state&lt;/em&gt; that preserves information corresponding to what has been observed to far by the network. This additional parameter is really another variable retained from processing previous state. In our example in this post, the &lt;em&gt;‘state’&lt;/em&gt; corresponds to a word. This vague definition allows to construct many variations of RNNs, but for the purpose of this rather simplistic problem at hand, we’ll consider the basic RNN architecture.&lt;/p&gt;
+
+&lt;h2 id=&quot;model-overview&quot;&gt;Model Overview&lt;/h2&gt;
+&lt;p&gt;In this post I am going to assume you are somewhat familiar with neural networks (NNs), since RNNs are variations on standard architecture. First, let me show you a nice RNN block diagram:&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/_images/bacterial_names/RNNcell.png&quot; alt=&quot;a Basic RNN cell&quot; /&gt;&lt;/p&gt;
-&lt;font size=&quot;2&quot;&gt;Imageo source: Andrew Ng&#39;s &quot;Sequence Models&quot; &lt;a target=&quot;_blank&quot; href=&quot;https://www.coursera.org/learn/nlp-sequence-models/&quot;&gt;[ref].&lt;/a&gt;&lt;/font&gt;
+&lt;font size=&quot;2&quot;&gt;Image source: Andrew Ng's &quot;Sequence Models&quot; &lt;a href=&quot;https://www.coursera.org/learn/nlp-sequence-models/&quot;&gt;[ref].&lt;/a&gt;&lt;/font&gt;
 
-&lt;p&gt;RNN can work on either characters or words. In this project I am going to generate words, so RNN model will inevitabely work on characters. Let me briefly describe what each notation element stands for:&lt;/p&gt;
+&lt;p&gt;In this project I am going to generate words, so RNN model will inevitably work on characters. Let me briefly describe what each notation element stands for:&lt;/p&gt;
 
 &lt;ul&gt;
-  &lt;li&gt;\( x^{&lt;t&gt;} \\) is an `t-th` element of sequence \\( X \\). Input sequence \\( X = \{ x^{&amp;lt;1&amp;gt;},x^{&amp;lt;2&amp;gt;},...,x^{&lt;t-1&gt;},x^{&lt;t&gt;}  \} \\),&lt;/t&gt;&lt;/t-1&gt;&lt;/t&gt;&lt;/li&gt;
-  &lt;li&gt;\( W_{aa} \), \( W_{ax} \), \( W_{ya} \): the weights of our RNN cell,&lt;/li&gt;
-  &lt;li&gt;\( a^{&lt;t-1&gt;} \\), \\( a^{&lt;t&gt;} \\): are *hidden state* activation from previous RNN cell (`t-1`) and for the next RNN cell (`t`),&lt;/t&gt;&lt;/t-1&gt;&lt;/li&gt;
-  &lt;li&gt;\( \hat{y}^{&lt;t&gt;} \\): is a prediction, a probability of a given character at a time-step `t`, usually computed by a `softmax` function as we operate on one-hot encodings,&lt;/t&gt;&lt;/li&gt;
-  &lt;li&gt;\( b_a \): is a bias term&lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;\( x^{&amp;lt;t&amp;gt;} \) is an &lt;code class=&quot;highlighter-rouge&quot;&gt;t-th&lt;/code&gt; element of sequence \( X \), i.e. a character. Input sequence has the formula \( X = { x^{&amp;lt;1&amp;gt;},x^{&amp;lt;2&amp;gt;},…,x^{&amp;lt;t-1&amp;gt;},x^{&amp;lt;t&amp;gt;}  } \),&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;\( W_{aa} \), \( W_{ax} \), \( W_{ya} \): the weights of our RNN cell,&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;\( a^{&amp;lt;t-1&amp;gt;} \), \( a^{&amp;lt;t&amp;gt;} \): are &lt;em&gt;hidden state&lt;/em&gt; activations from a previous RNN cell (&lt;code class=&quot;highlighter-rouge&quot;&gt;t-1&lt;/code&gt;) and for the next RNN cell (&lt;code class=&quot;highlighter-rouge&quot;&gt;t&lt;/code&gt;),&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;\( \hat{y}^{&amp;lt;t&amp;gt;} \): is a prediction, a probability of a given character at a time-step &lt;code class=&quot;highlighter-rouge&quot;&gt;t&lt;/code&gt;, usually computed by a &lt;code class=&quot;highlighter-rouge&quot;&gt;softmax&lt;/code&gt; function as we operate on one-hot encodings,&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;\( b_a \): is a bias term&lt;/p&gt;
+  &lt;/li&gt;
 &lt;/ul&gt;
 
-&lt;p&gt;The rest is a set of additions and multiplications. Essentialy the whole architecture is build upon this cell by means of repetition:&lt;/p&gt;
+&lt;p&gt;The rest is a set of additions and multiplications. Essentially the whole architecture is build upon this cell by means of repetition of RNN cells:&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/_images/bacterial_names/RNNarch.png&quot; alt=&quot;a basic RNN architecture&quot; /&gt;&lt;/p&gt;
+&lt;font size=&quot;2&quot;&gt;Image source: Andrew Ng's &quot;Sequence Models&quot; &lt;a href=&quot;https://www.coursera.org/learn/nlp-sequence-models/&quot;&gt;[ref].&lt;/a&gt;&lt;/font&gt;
 
-&lt;p&gt;Forward pass through this network needs to compute \( \hat{Y} \) (prediction) vectors, hidden states \( a \), and store some of its computing results in &lt;em&gt;cache&lt;/em&gt; that is needed for backpropagation. After forward pass, for our model we’ll use a simple cross-entropy function as a loss. For a single timestep it is defined as:&lt;/p&gt;
+&lt;p&gt;Forward pass through this network needs to compute \( \hat{Y} \in ( \hat{Y}^{&amp;lt;1&amp;gt;}, … , \hat{Y}^{&amp;lt;T_x&amp;gt;} ) \) prediction vectors, hidden states \( a \), and store some of its computing results in &lt;em&gt;cache&lt;/em&gt; that is needed for backpropagation. After forward pass, for our model we’ll use a simple cross-entropy function as our model loss. For a single timestep it is defined as:&lt;/p&gt;
 
-&lt;p&gt;\[  L_t(y_t,\hat{y}_t) = - y_tlog(\hat{y}_t) \]&lt;/p&gt;
+&lt;p&gt;\[  L_t(y_t,\hat{y}_t) = - y_t log(\hat{y}_t) \]&lt;/p&gt;
 
-&lt;p&gt;and for an entire sequence cost is just a sum of these values:&lt;/p&gt;
+&lt;p&gt;and for an entire sequence, the cost function is just a sum of loss values:&lt;/p&gt;
 
 &lt;p&gt;\[ L(y,\hat{y}) = - \Sigma_t y_tlog(\hat{y}_t) \]&lt;/p&gt;
 
-&lt;h2 id=&quot;one-hot-encodings&quot;&gt;One-hot encodings&lt;/h2&gt;
-
-&lt;p&gt;Input sequence at a given timestep &lt;code class=&quot;highlighter-rouge&quot;&gt;t&lt;/code&gt;: \( x^{&lt;t&gt;} \\) must come in a handy format for computations.&lt;/t&gt;&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;padding&lt;/li&gt;
-&lt;/ul&gt;
-
 &lt;h2 id=&quot;parameters-initialization&quot;&gt;Parameters initialization&lt;/h2&gt;
+
+&lt;p&gt;The model, as shown on the image above, has many weights which need to be somewhat initialized before we begin training this network. These parameters are: \( W_{aa},W_{ax}, W_{ya},b,b_y \). As in any standard neural network setting these values to zero would not yield any “learning” results, as each pass and backpropagation would not adjust these weights. For this simplistic example a random initialization, between &lt;code class=&quot;highlighter-rouge&quot;&gt;0&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;0.01&lt;/code&gt; would suffice for &lt;code class=&quot;highlighter-rouge&quot;&gt;W&lt;/code&gt; parameters, and biases &lt;code class=&quot;highlighter-rouge&quot;&gt;b&lt;/code&gt; could be initialized to zeros.&lt;/p&gt;
+
+&lt;h2 id=&quot;forward-propagation&quot;&gt;Forward propagation&lt;/h2&gt;
+
+&lt;h3 id=&quot;forward-propagation-through-an-rnn-cell&quot;&gt;Forward propagation through an RNN cell&lt;/h3&gt;
+&lt;p&gt;Forward propagation is a set of repeated propagations through the RNN cell. Each RNN cell takes as input a set of parameters:
+ \( W_{aa},W_{ax}, W_{ya},b,b_y \), previous state \( a_{prev}\) and current time-stamp, which is our character at particular position \( x^{&amp;lt;t&amp;gt;}\) (refer to the RNN architecture image above).&lt;/p&gt;
+
+&lt;p&gt;Each RNN cell returns the next hidden state \( a^{&amp;lt;t+1 &amp;gt;} \) computed as an activation function, for example &lt;code class=&quot;highlighter-rouge&quot;&gt;tanh&lt;/code&gt; applied to linear combination of weights and parameters, and current probability computed as a &lt;code class=&quot;highlighter-rouge&quot;&gt;softmax&lt;/code&gt; (an activation function used for probability prediction) from current hidden state, and appropriate weights.&lt;/p&gt;
+
+&lt;p&gt;\[ a^{ &amp;lt;t&amp;gt;}  = tanh( W_{ax}x^{ &amp;lt;t&amp;gt;}  + W_{aa}a^{&amp;lt;t-1&amp;gt;}+b_a   )  \]
+  \[ y^{ &amp;lt;t&amp;gt;}  = softmax( W_{ya}a^{ &amp;lt;t&amp;gt;}  +b_y   )  \]&lt;/p&gt;
+
+&lt;h3 id=&quot;forward-propagation-through-a-network-of-rnn-cells&quot;&gt;Forward propagation through a network (of RNN cells)&lt;/h3&gt;
+&lt;p&gt;I am repeating myself here, but for the sake of clarity: a forward pass through the network is just a repetition of single blocks, repeated \( T_x \) times (the length of the word).&lt;/p&gt;
+
+&lt;p&gt;As a result of this repeated forward propagation we should obtain \( \hat{Y} \), a vector of predictions (&lt;code class=&quot;highlighter-rouge&quot;&gt;softmax&lt;/code&gt; probabilities), vector \(a \) of hidden states (from first to the last character). Our loss function is a standard cross-entropy function implemented as (for a single time-stamp):&lt;/p&gt;
+
+&lt;p&gt;\[  L_t(y_t,\hat{y}_t) = - y_tlog(\hat{y}_t)  \]&lt;/p&gt;
+
+&lt;p&gt;and for an entire RNN network architecture:&lt;/p&gt;
+
+&lt;p&gt;\[ L(y,\hat{y}) = - \Sigma_t y_tlog(\hat{y}_t) \]&lt;/p&gt;
 
 &lt;h2 id=&quot;backpropagation&quot;&gt;Backpropagation&lt;/h2&gt;
 
-&lt;p&gt;Backpropagation in an RNN network is complicated, but not that hard. Essentialy it is often said that deriving these computations by hand is the most &lt;em&gt;‘complex’&lt;/em&gt; thing in neural networks. Since many frameworks outsource this for their users, it has become neglected - and I don’t blame anybody, it really is convenient. For a matter of practice however, in this section I am going to carry out all necessary calculations for the backpropagation through our RNN architecture.&lt;/p&gt;
+&lt;p&gt;Backpropagation in an RNN network is complicated, but not that hard. Essentially it is often said that deriving these computations by hand is the most &lt;em&gt;‘complex’&lt;/em&gt; thing in neural networks. Since many frameworks outsource this for their users, it has become neglected - and I don’t blame anybody, it is really convenient. For a matter of practice however, in this section I am going to carry out all necessary calculations for the backpropagation through our RNN architecture.&lt;/p&gt;
 
-&lt;p&gt;Since these calculations take much space, and would hide the &lt;em&gt;“big picture”&lt;/em&gt;, please follow &lt;a href=&quot;/helper_posts/RNN_backprop.markdown&quot;&gt;this link&lt;/a&gt; for a complete set of computations. Below I reproduce the final derivative terms for convenience:&lt;/p&gt;
+&lt;p&gt;If you don’t feel like following these simple derivatives, skip to &lt;em&gt;‘Backpropagation summary’&lt;/em&gt; paragraph, where all necessary derivatives are computed.&lt;/p&gt;
+
+&lt;h3 id=&quot;backpropagation-through-a-cell&quot;&gt;Backpropagation through a cell&lt;/h3&gt;
+
+&lt;p&gt;Our model could be summarized with these three equations:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;\( L_t = - y^{&amp;lt;t&amp;gt;} log(\hat{y}^{&amp;lt;t&amp;gt;}) \)&lt;/li&gt;
+  &lt;li&gt;\( \hat{y}^{&amp;lt;t&amp;gt;} = softmax ( W_{ya} a^{&amp;lt;t&amp;gt;} + b_y ) = softmax(z) \)&lt;/li&gt;
+  &lt;li&gt;\( a^{&amp;lt;t&amp;gt;} = tanh  (W_{ax} x^{&amp;lt;t&amp;gt;} + W_{aa}a^{&amp;lt;t-1&amp;gt;} + b_a) \)&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;It would also help to know how activation functions are defined:&lt;/p&gt;
 
 &lt;ul&gt;
-  &lt;li&gt;test&lt;/li&gt;
-  &lt;li&gt;test&lt;/li&gt;
-  &lt;li&gt;test&lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;\( softmax(z_j) =  \frac{e^z_j}{\Sigma^K_k e^z_k}\) where \(j=1,2,…k,k+1,…,K \)&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;\( tanh(z) = \frac{sinh(z)}{cosh(z)} =  \frac{e^z - e^{-z}}{e^z + e^{-z}} \)&lt;/p&gt;
+  &lt;/li&gt;
 &lt;/ul&gt;
 
-&lt;h1 id=&quot;resources&quot;&gt;Resources&lt;/h1&gt;
+&lt;p&gt;With these we can calculate all the necessary derivatives. These calculations take considerate amount of space, so I put them under the link below:&lt;/p&gt;
+&lt;h3 id=&quot;backpropagation-calculations-link-&quot;&gt;&lt;a href=&quot;/statics/RNNbackprop&quot;&gt;Backpropagation calculations [Link] » &lt;/a&gt;&lt;/h3&gt;
 
+&lt;p&gt;If you followed the above link for calculations of backpropagation derivatives, then you already know where these values below come from, if not - then it’s not really necessary for you to follow that.&lt;/p&gt;
+
+&lt;p&gt;Backpropagation through a single cell - final derivatives:&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;\(  \frac{\partial L_t}{\partial W_{ya}}  =  (\hat{y}^{&amp;lt;t_l&amp;gt;} -y^{&amp;lt;t_l&amp;gt;} ) \cdot a^{&amp;lt;t&amp;gt;}  \)&lt;/li&gt;
+  &lt;li&gt;\( \frac{\partial L_t}{\partial b_{y}} = \frac{\partial L_t}{\partial \hat{y}^{&amp;lt;t&amp;gt;}} \cdot \frac{\partial \hat{y}^{&amp;lt;t&amp;gt;}}{\partial z} \cdot 1 = \frac{\partial L_t}{\partial z} = \hat{y}^{&amp;lt;t_l&amp;gt;} -y^{&amp;lt;t_l&amp;gt;} \)&lt;/li&gt;
+  &lt;li&gt;\( \frac{\partial a^{&amp;lt;t&amp;gt;}}{\partial W_{aa}} = (1-a^{2&amp;lt;t&amp;gt;})a^{&amp;lt;t-1&amp;gt;} \)&lt;/li&gt;
+  &lt;li&gt;\( \frac{\partial a^{&amp;lt;t&amp;gt;}}{\partial b_a} = (1-a^{2&amp;lt;t&amp;gt;}) \)&lt;/li&gt;
+  &lt;li&gt;\( \frac{\partial a^{&amp;lt;t&amp;gt;}}{\partial W{ax}}  = (1-a^{2&amp;lt;t&amp;gt;}) \cdot x^{&amp;lt;t&amp;gt;} \)&lt;/li&gt;
+  &lt;li&gt;\( \frac{\partial L_t}{\partial W_{ya} } = (\hat{y}^{&amp;lt;t_l&amp;gt;} -y^{&amp;lt;t_l&amp;gt;}) W_{ya} \)&lt;/li&gt;
+  &lt;li&gt;\( \frac{\partial a^{&amp;lt;t&amp;gt;}}{\partial a_{&amp;lt;t-1&amp;gt;}} = (1-a^{2&amp;lt;t&amp;gt;})W_{aa} \)&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;backpropagation-through-a-network&quot;&gt;Backpropagation through a network&lt;/h3&gt;
+&lt;p&gt;After we’ve implemented our backward pass through the network for a single cell. Now we just have to repeat this for our network. The visualization below helps you to understand it better:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/_images/bacterial_names/loss_compute.png&quot; alt=&quot;RNN network - computing loss and backpropagation&quot; /&gt;
+&lt;a href=&quot;https://www.coursera.org/learn/intro-to-deep-learning&quot;&gt;Image Source&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;This backpropagation is called a backpropagation &lt;em&gt;‘through time’&lt;/em&gt;. If you think about it, we have to go in the opposite, i.e. reversed order to compute the desired gradient. We need to perform an iterative stepping in reversed order over each time step while &lt;strong&gt;incrementing&lt;/strong&gt; (adding) the overall gradients: \( \partial b_a, \partial W_{aa}, \partial W_{ax} \).&lt;/p&gt;
+
+&lt;h4 id=&quot;gradient-clipping&quot;&gt;Gradient clipping&lt;/h4&gt;
+
+&lt;p&gt;After backpropagation and computing all the gradients we can make sure our gradients would not “explode”, i.e. reach very high values compared to inputs. This phenomenon could make it very hard to effectively train our model. Here is some nice visualization of Loss function descending (gradient descent) with and without clipping:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/_images/bacterial_names/clipping.png&quot; alt=&quot;Gradient clipping&quot; /&gt;
+&lt;a href=&quot;https://www.coursera.org/learn/intro-to-deep-learning&quot;&gt;Image Source&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;Gradient clipping keeps the gradients values &lt;em&gt;‘in check’&lt;/em&gt;, that is between some arbitrary &lt;code class=&quot;highlighter-rouge&quot;&gt;min&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;max&lt;/code&gt; values.&lt;/p&gt;
+
+&lt;p&gt;Training the model is performed in a standard fashion, compute loss, calculate gradient, update parameters, and iterate over # number of epochs through the data, trying to minimize this loss function. The key idea is then to get to know how to generate new observations…&lt;/p&gt;
+
+&lt;h2 id=&quot;sampling-the-model&quot;&gt;Sampling the model&lt;/h2&gt;
+&lt;p&gt;Sampling is the process of generating novel &lt;em&gt;observations&lt;/em&gt;. In our example new letters would construct a made-up bacterial genera name.&lt;/p&gt;
+
+&lt;p&gt;If our network is trained we can then pass a vector of zeros \( \vec{0}\) as input hidden state \( a^{&amp;lt;0&amp;gt;} \). Then we perform propagation through the first unit of our RNN network. So we obtain next hidden state \(a^{&amp;lt;t+1&amp;gt;}\) and prediction \( \hat{y}^{&amp;lt;t+1&amp;gt;} \) that represents the probabilities of each character &lt;code class=&quot;highlighter-rouge&quot;&gt;i&lt;/code&gt;:&lt;/p&gt;
+
+&lt;p&gt;\[ a^{&amp;lt;t+1&amp;gt;} = tanh(W_{ax}x^{&amp;lt;t&amp;gt;} + W_{aa}a^{&amp;lt;t&amp;gt;} + b) \]
+\[ \hat{y}^{&amp;lt;t+1&amp;gt;}  = softmax( W_{ya}a^{&amp;lt;t+1&amp;gt;} + b_y  )  \]&lt;/p&gt;
+
+&lt;p&gt;Having computed a vector of probabilities \( \hat{y}^{&amp;lt;t+1&amp;gt;}\) we now perform &lt;strong&gt;sampling&lt;/strong&gt; procedure. We do not pick just the highest probability, this would in turn generate the same results each time for a given dataset. We do not want to pick our characters randomly, as results would become random, and all the architecture build would become useless. The key is to select (i.e. &lt;em&gt;sample&lt;/em&gt;) from our \( \hat{y}^{&amp;lt;t+1&amp;gt;} \) distribution.&lt;/p&gt;
+
+&lt;p&gt;In other words, we’ll pick the index &lt;code class=&quot;highlighter-rouge&quot;&gt;i&lt;/code&gt; (remember that we have a one-hot encoded our alphabeth) with the probability encoded by the &lt;code class=&quot;highlighter-rouge&quot;&gt;i&lt;/code&gt;-th index in \(\hat{y}^{&amp;lt;t+1&amp;gt;} \) matrix.&lt;/p&gt;
+
+&lt;p&gt;The final step is to &lt;strong&gt;overwrite&lt;/strong&gt; the variable \( x^{&amp;lt;t+1&amp;gt;}\) with our predicted one-hot encoding \(y^{&amp;lt;t&amp;gt;}\) of selected/sampled index &lt;code class=&quot;highlighter-rouge&quot;&gt;i&lt;/code&gt; from the previous step. This is represented as red arrow on the picture below:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/_images/bacterial_names/sampling2.png&quot; alt=&quot;Gradient clipping&quot; /&gt;
+&lt;a href=&quot;https://www.coursera.org/learn/intro-to-deep-learning&quot;&gt;Image Source&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;We’ll continue this propagation until we reach end of the line character &lt;code class=&quot;highlighter-rouge&quot;&gt;\n&lt;/code&gt;. Then our generation is finished, and we can print our result. If something goes wrong, then we additionally limit ourselves to an arbitrary number of character limit, for example &lt;code class=&quot;highlighter-rouge&quot;&gt;50&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h2 id=&quot;building-a-language-models&quot;&gt;Building a language models&lt;/h2&gt;
+
+&lt;p&gt;The number of our network parameters is not dependent on the length of the input word. For training purposes we’ll then just loop over one example at a time. Meaning, we’ll forward propagate through RNN architecture, compute and clip gradients, update initial parameters with these computed gradients. Updating parameters means subtracting computed gradients that were multiplied by so called &lt;em&gt;learning rate&lt;/em&gt;, an arbitrary and small value, like. &lt;code class=&quot;highlighter-rouge&quot;&gt;.0001&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h1 id=&quot;results&quot;&gt;Results&lt;/h1&gt;
+&lt;p&gt;Using &lt;strong&gt;7901&lt;/strong&gt; genera names from SILVA database I’ve trained this network and came up with a bunch of original bacterial names. Original in this context means that these names have not been present in our input database.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;- Nitronella
+- Sebacter
+- Vetia
+- Setinelfonax
+- Vestaphylococcus
+- Setonas
+- Nembacterium
+- Pioclococclus
+- Detiptonus
+- Frreptococcus
+- Teeutomonas
+- Fetiphylococcus
+- Blunna
+- Alococella
+- Tantatum
+- Cublia
+- Palibacter
+- Arstrosa
+- Glymia
+- Actoboctellibacterium
+- Salanillus
+- Sardaera&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;My presonal favourite is &lt;code class=&quot;highlighter-rouge&quot;&gt;Nitronella&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;Vetia&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;Frreptococcus&lt;/code&gt;. You can inspect the &lt;code class=&quot;highlighter-rouge&quot;&gt;genera.txt&lt;/code&gt; that I’ve obtained from the training dataset - the name is not there. Instead you can find:&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Nitrobacter, Nitrococcus, Nitrolancetus, Nitrosococcus, Nitrosomonas, Nitrosopelagicus, Nitrosospira, Nitrospina, Nitrospinae, Nitrospira, Nitrospirae, Nitrospirillum&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;As for bacteria ending with &lt;code class=&quot;highlighter-rouge&quot;&gt;*ella&lt;/code&gt;, there are 425 such observations, some of which are: &lt;code class=&quot;highlighter-rouge&quot;&gt;Volvariella, Nidorella, Veillonella, Weissella, Actinanthella, Truncocolumella, Traorella, Trichinella, Raoultella, Gloeotulasnella&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;Are these names useful? Perhaps. I think that names should be descriptive of origin or functionality, and it is really not my field of expertise to have a strong opinion here. But at the same time I feel that it might be a better alternative than naming a bacteria after a researcher.&lt;/p&gt;
+
+&lt;p&gt;Perhaps the next newly discovered bacteria will take its name from similar list? All things considered we’re in the middle of AI revolution, and letting AI to name a new species will inevitably be regarded as a mark in OUR history.&lt;/p&gt;
+
+&lt;h1 id=&quot;resources&quot;&gt;Resources&lt;/h1&gt;
+&lt;ol&gt;
+  &lt;li&gt;&lt;a href=&quot;https://www.deeplearningbook.org/&quot;&gt;Deep Learning Book by Aaron Courville, Ian Goodfellow, and Yoshua Bengio&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://www.manning.com/books/deep-learning-with-python&quot;&gt; Deep Learning with Python book by François Chollet &lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://www.coursera.org/learn/intro-to-deep-learning&quot;&gt; National Research University Higher School of Economics: “Introduction to Deep Learning”&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://www.coursera.org/learn/nlp-sequence-models/home/welcome&quot;&gt;Dr Andrew Ng’s “Sequence Models” course&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;
 </description>
-        <pubDate>Mon, 21 May 2018 00:00:00 -0500</pubDate>
-        <link>/2018/05/21/RNN-bacteria-name-generator/</link>
-        <guid isPermaLink="true">/2018/05/21/RNN-bacteria-name-generator/</guid>
+        <pubDate>Mon, 21 May 2018 00:00:00 -0400</pubDate>
+        <link>http://localhost:4000/2018/05/21/RNN-bacteria-name-generator/</link>
+        <guid isPermaLink="true">http://localhost:4000/2018/05/21/RNN-bacteria-name-generator/</guid>
         
         
         <category>Data-Science</category>
@@ -91,9 +267,9 @@
     
       <item>
         <title>Simple anomaly detection system</title>
-        <description>&lt;p&gt;In this post I’ll quickly go over a simple &lt;em&gt;anomaly detection system&lt;/em&gt;: what is it, what are its motivations and how to build it. I’ll use an example dataset of hypothyroid patients to look for anomalies. You can read this post, &lt;a target=&quot;_blank&quot; href=&quot;https://github.com/vaxherra/vaxherra.github.io/blob/master/_files/anomaly_detection/anomaly.ipynb&quot;&gt;&lt;b&gt;&lt;u&gt;follow along a jupyter notebook &lt;/u&gt;&lt;/b&gt;&lt;/a&gt; for code snippets or &lt;a target=&quot;_blank&quot; href=&quot;/_files/anomaly_detection/anomaly.ipynb&quot;&gt;&lt;b&gt;&lt;u&gt;download&lt;/u&gt;&lt;/b&gt;&lt;/a&gt; it for a local use. I obtained the dataset from &lt;a href=&quot;http://odds.cs.stonybrook.edu/thyroid-disease-dataset/&quot;&gt;&lt;em&gt;Outlier Detection Dataset&lt;/em&gt; website&lt;/a&gt;, but you can download it &lt;a target=&quot;_blank&quot; href=&quot;/_files/anomaly_detection/thyroid.mat&quot;&gt;&lt;b&gt;&lt;u&gt;here&lt;/u&gt;&lt;/b&gt;&lt;/a&gt; if something happens to the source.&lt;/p&gt;
+        <description>&lt;p&gt;In this post I’ll quickly go over a simple &lt;em&gt;anomaly detection system&lt;/em&gt;: what is it, what are its motivations and how to build it. I’ll use an example dataset of hypothyroid patients to look for anomalies. You can read this post, &lt;a href=&quot;https://github.com/vaxherra/vaxherra.github.io/blob/master/_files/anomaly_detection/anomaly.ipynb&quot;&gt;&lt;b&gt;&lt;u&gt;follow along a jupyter notebook &lt;/u&gt;&lt;/b&gt;&lt;/a&gt; for code snippets or &lt;a href=&quot;/_files/anomaly_detection/anomaly.ipynb&quot;&gt;&lt;b&gt;&lt;u&gt;download&lt;/u&gt;&lt;/b&gt;&lt;/a&gt; it for a local use. I obtained the dataset from &lt;a href=&quot;http://odds.cs.stonybrook.edu/thyroid-disease-dataset/&quot;&gt;&lt;em&gt;Outlier Detection Dataset&lt;/em&gt; website&lt;/a&gt;, but you can download it &lt;a href=&quot;/_files/anomaly_detection/thyroid.mat&quot;&gt;&lt;b&gt;&lt;u&gt;here&lt;/u&gt;&lt;/b&gt;&lt;/a&gt; if something happens to the source.&lt;/p&gt;
 
-&lt;font size=&quot;1&quot;&gt;Cover photo source: a cropped fragment from Pieter&#39;s Bruegel the Elder &lt;i&gt;&#39;Netherlandish Proverbs&#39;&lt;/i&gt;. This painting is a list of proverbs and idioms, and this particular fragments means &quot;To be able to tie even the devil to a pillow&quot;, i.e. Obstinacy overcomes everything &lt;a target=&quot;_blank&quot; href=&quot;https://en.wikipedia.org/wiki/Netherlandish_Proverbs&quot;&gt;[ref].&lt;/a&gt;&lt;/font&gt;
+&lt;font size=&quot;1&quot;&gt;Cover photo source: a cropped fragment from Pieter's Bruegel the Elder &lt;i&gt;'Netherlandish Proverbs'&lt;/i&gt;. This painting is a list of proverbs and idioms, and this particular fragments means &quot;To be able to tie even the devil to a pillow&quot;, i.e. Obstinacy overcomes everything &lt;a href=&quot;https://en.wikipedia.org/wiki/Netherlandish_Proverbs&quot;&gt;[ref].&lt;/a&gt;&lt;/font&gt;
 
 &lt;h2 id=&quot;motivation&quot;&gt;Motivation&lt;/h2&gt;
 
@@ -172,7 +348,7 @@
 
 &lt;p&gt;Iterating over a set of \( epsilon \) values we choose the one that minimizes errors, i.e. maximizes our F1 score. We then use this \( \epsilon \) on the third portion of our data - &lt;em&gt;test set&lt;/em&gt; and compute final precision, recall, and F1 scores.&lt;/p&gt;
 
-&lt;p&gt;If you follow &lt;a target=&quot;_blank&quot; href=&quot;https://github.com/vaxherra/vaxherra.github.io/blob/master/_files/anomaly_detection/anomaly.ipynb&quot;&gt;&lt;b&gt;&lt;u&gt;jupyter notebook&lt;/u&gt;&lt;/b&gt;&lt;/a&gt; for this post, then you observed that our final F1 score is \( F1 \approx 0.73 \) with \( precision \approx 0.58 \) and  \( recall \approx 0.96 \). Is this good?&lt;/p&gt;
+&lt;p&gt;If you follow &lt;a href=&quot;https://github.com/vaxherra/vaxherra.github.io/blob/master/_files/anomaly_detection/anomaly.ipynb&quot;&gt;&lt;b&gt;&lt;u&gt;jupyter notebook&lt;/u&gt;&lt;/b&gt;&lt;/a&gt; for this post, then you observed that our final F1 score is \( F1 \approx 0.73 \) with \( precision \approx 0.58 \) and  \( recall \approx 0.96 \). Is this good?&lt;/p&gt;
 
 &lt;h2 id=&quot;final-comment&quot;&gt;Final comment&lt;/h2&gt;
 
@@ -180,9 +356,9 @@
 
 &lt;p&gt;Oftentimes building a model and estimating accuracy is not enough. We need a model interpretation for a particular use. We have to analyze the nature of the problem and think about desired output. Here we have a standard precision and recall tradeoff, in which we are far better of with higher recall.&lt;/p&gt;
 </description>
-        <pubDate>Tue, 15 May 2018 00:00:00 -0500</pubDate>
-        <link>/2018/05/15/anomaly-detection/</link>
-        <guid isPermaLink="true">/2018/05/15/anomaly-detection/</guid>
+        <pubDate>Tue, 15 May 2018 00:00:00 -0400</pubDate>
+        <link>http://localhost:4000/2018/05/15/anomaly-detection/</link>
+        <guid isPermaLink="true">http://localhost:4000/2018/05/15/anomaly-detection/</guid>
         
         
         <category>Data-Science</category>
@@ -201,9 +377,9 @@
 
 &lt;p&gt;Feel free to say hello in the comment!&lt;/p&gt;
 </description>
-        <pubDate>Sat, 12 May 2018 00:00:00 -0500</pubDate>
-        <link>/2018/05/12/launch/</link>
-        <guid isPermaLink="true">/2018/05/12/launch/</guid>
+        <pubDate>Sat, 12 May 2018 00:00:00 -0400</pubDate>
+        <link>http://localhost:4000/2018/05/12/launch/</link>
+        <guid isPermaLink="true">http://localhost:4000/2018/05/12/launch/</guid>
         
         
         <category>Blog</category>
