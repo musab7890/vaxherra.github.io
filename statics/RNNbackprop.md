@@ -8,7 +8,7 @@ description: Create an RNN network and apply it to create novel bacterial genera
 image: /_images/bosh/0014.png
 image-sm: /_images/bosh/0014.png
 ---
-[<--- Go back to original post]({{ site.baseurl }}{% post_url 2018-05-21-RNN-bacteria-name-generator %})
+[<--- Go back to original post]({{ site.baseurl }}{% post_url 2018-10-01-RNN-bacteria-name-generator %})
 
 
 
