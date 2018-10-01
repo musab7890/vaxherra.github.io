@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Bacterial name generator with RNNs: Backpropagation derivatives"
-date: 2018-05-21
+date: 2018-10-01
 categories:
   - Data-Science
 description: Create an RNN network and apply it to create novel bacterial genera name.
