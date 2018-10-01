@@ -11,8 +11,8 @@ image-sm: /_images/bosh/0014.png
 In this post I'll cover how to build a Recurrent Neural Network (RNN) from scratch, as well as using existing Deep Learning (DL) frameworks to create new bacterial names from thousands of publicly available annotations.
 
 In accompanying Jupyter notebooks I'll cover how to do this in:
-1. Python and Numpy (painstaking implementation) - [see here](/_files/bacterial_names/RNNs.ipynb)
-2. KERAS with Tensorflow backend (quick implementation) - [see here](/_files/bacterial_names/RNNs_KERAS.ipynb)
+1. Python and Numpy (painstaking implementation) <a href="https://github.com/vaxherra/vaxherra.github.io/blob/master/_files/bacterial_names/RNNs.ipynb">[see here]</a>
+2. KERAS with Tensorflow backend (quick implementation) - <a href="https://github.com/vaxherra/vaxherra.github.io/blob/master/_files/bacterial_names/RNNs_KERAS.ipynb">[see here]</a>
 
 I assume you have some knowledge of standard neural networks, are familiar with the ideas of propagation and backpropagation, loss and cost functions. I'll present how to construct an RNN unit, then an RNN network. I'll compute all the derivatives needed for backpropagation *'throught time'*. Finally I'll use the constructed networks and bacterial [SILVA database](https://www.arb-silva.de/) to extract bacterial genera names, and **sample** - generate novel names through our model.
 
